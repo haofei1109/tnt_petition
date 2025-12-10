@@ -1,0 +1,8 @@
+{
+  "name": "TNT Please Station",
+  "description": "为时代少年团（TNT）粉丝打造的请愿平台，让大家表达心愿，创造美好时刻。",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
