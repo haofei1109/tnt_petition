@@ -274,7 +274,7 @@ const App: React.FC = () => {
                   <span className="font-black text-black text-xs">TNT</span>
                </div>
                <span className="font-bold text-xl tracking-tight text-gray-900">
-                 时代少年团 <span className="text-tnt-orange">请愿站</span>
+                 时代少年团爆米花 <span className="text-tnt-orange">请愿站</span>
                </span>
             </div>
 
@@ -367,7 +367,7 @@ const App: React.FC = () => {
           </div>
           <p className="text-gray-600 text-base mb-2 font-serif font-bold italic tracking-wide">"破天下，定风云，时代少年并肩行"</p>
           <p className="text-gray-400 text-xs mt-4">
-            2025 时代少年团请愿站. Created with love for TNT!
+            2025 时代少年团爆米花请愿站. Created with love for TNT!
           </p>
         </div>
       </footer>
