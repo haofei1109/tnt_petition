@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Petition, Signature, ViewState } from './types';
-import { INITIAL_PETITIONS } from './constants';
+// import { INITIAL_PETITIONS } from './constants';
 import CreatePetition from './components/CreatePetition';
 import PetitionCard from './components/PetitionCard';
 import PetitionDetail from './components/PetitionDetail';
@@ -19,7 +19,7 @@ const HERO_IMAGES = [
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('HOME');
-  const [petitions, setPetitions] = useState<Petition[]>(INITIAL_PETITIONS);
+  const [petitions, setPetitions] = useState<Petition[]>([]);
   const [selectedPetitionId, setSelectedPetitionId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('POPULAR');
@@ -31,37 +31,17 @@ const App: React.FC = () => {
   // Calculate total signatures for Hero section
   const totalSignatures = petitions.reduce((acc, curr) => acc + curr.signatures.length, 0);
 
-  // Load from local storage on mount (simple persistence)
+  // 挂载时从 API 获取心愿列表
   useEffect(() => {
-    const saved = localStorage.getItem('tnt_petitions_v2');
-    if (saved) {
-      try {
-        setPetitions(JSON.parse(saved));
-      } catch (error) {
-        console.error('Failed to parse saved petitions', error);
-      }
-    }
+    fetch('/api/petitions')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.petitions) setPetitions(data.petitions);
+      })
+      .catch(err => {
+        console.error('加载心愿列表失败', err);
+      });
   }, []);
-
-  // Save to local storage on change
-  useEffect(() => {
-    try {
-      localStorage.setItem('tnt_petitions_v2', JSON.stringify(petitions));
-    } catch (error) {
-      console.error('Failed to save to localStorage:', error);
-      // If storage is full, try to clean up old data
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.warn('Storage quota exceeded, clearing old data');
-        localStorage.removeItem('tnt_petitions_v2');
-        // Try again with current data
-        try {
-          localStorage.setItem('tnt_petitions_v2', JSON.stringify(petitions));
-        } catch (e) {
-          console.error('Still failed after clearing:', e);
-        }
-      }
-    }
-  }, [petitions]);
 
   // Carousel Logic
   useEffect(() => {
@@ -74,30 +54,48 @@ const App: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleCreatePetition = (data: Omit<Petition, 'id' | 'signatures' | 'createdAt'>) => {
+  const handleCreatePetition = async (data: Omit<Petition, 'id' | 'signatures' | 'createdAt'>) => {
     const newPetition: Petition = {
       ...data,
       id: Date.now().toString(),
       createdAt: Date.now(),
       signatures: []
     };
-    setPetitions([newPetition, ...petitions]);
-    setView('HOME');
+    try {
+      await fetch('/api/petitions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPetition)
+      });
+      // 创建成功后刷新心愿列表
+      const res = await fetch('/api/petitions');
+      const result = await res.json();
+      if (result && result.petitions) setPetitions(result.petitions);
+      setView('HOME');
+    } catch (err) {
+      alert('创建心愿失败，请重试');
+    }
   };
 
-  const handleSignPetition = (id: string, signerData: Omit<Signature, 'id' | 'timestamp'>) => {
+  const handleSignPetition = async (id: string, signerData: Omit<Signature, 'id' | 'timestamp'>) => {
     const newSignature: Signature = {
       ...signerData,
       id: Date.now().toString(),
       timestamp: Date.now()
     };
-
-    setPetitions(petitions.map(p => {
-      if (p.id === id) {
-        return { ...p, signatures: [...p.signatures, newSignature] };
-      }
-      return p;
-    }));
+    try {
+      await fetch('/api/sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ petitionId: id, signature: newSignature })
+      });
+      // 签名成功后刷新心愿列表
+      const res = await fetch('/api/petitions');
+      const result = await res.json();
+      if (result && result.petitions) setPetitions(result.petitions);
+    } catch (err) {
+      alert('签名失败，请重试');
+    }
   };
 
   const getSortedPetitions = () => {
